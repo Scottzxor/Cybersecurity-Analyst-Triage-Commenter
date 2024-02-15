@@ -1,0 +1,120 @@
+# Cybersecurity Analyst Triage Commenter
+# Defangs URLs and IPs and parses format for SOAR compatibility.
+# Scott Shaulis
+# 02/15/2024
+
+import os
+import re
+import sys
+import tkinter as tk
+from tkinter import ttk
+
+
+# noinspection PyTypeChecker
+def main():
+    root = tk.Tk()
+    root.geometry('400x400')
+    root.title("MalOpCommentator")
+
+    # set width and height values of root
+    w = 600
+    h = 300
+
+    # Set variables for size of screen using winfo
+    screen_width = root.winfo_screenwidth()
+    screen_height = root.winfo_screenheight()
+
+    # Calculate starting X and Y coordinates for Window
+    x = (screen_width / 2) - (w / 2)
+    y = (screen_height / 2) - (h / 2)
+
+    # Set digit placeholders to equal above values via digit x digit concatenated with digit + digit.
+    root.geometry('%dx%d+%d+%d' % (w, h, x, y))
+
+    # Instantiate style object
+    s = ttk.Style()
+    # Creates template for all frames
+    s.configure('TFrame', width=1000, height=1000, background="gold")
+    # Frame for Title Box
+    s.configure("SecondaryFrame", background="black")
+    # Style config for Label
+    s.configure("Label", background="black", foreground="gold")
+    # Style config for buttons
+    s.configure("W.TButton", font='Courier New', background="black", ), 'bold'
+
+    # Create the main frame
+    mainframe = ttk.Frame(root, width=1000, height=1000)
+    # Fill root: This is extremely important to get visibility of frame.
+    mainframe.pack(fill="both", expand=True)
+
+    # Search function for exe packaging after _MEIPASS extraction
+    def resource(relative_path):
+        base_path = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
+        return os.path.join(base_path, relative_path)
+
+    cyberowl = resource("C:\\Users\\ScottShaulis\\Desktop\\Programming Projects\\CybereasonOwl.ico")
+
+    # Planting the owl.
+    root.iconbitmap(cyberowl)
+
+    # Creating secondary frame for title
+    secondaryframe = ttk.Frame(root, width=500, height=500)
+    # Fill root: This is extremely important to get visibility of frame within root.
+    secondaryframe.pack(fill="both", expand=True)
+
+    label = ttk.Label(mainframe, text="URLs and IPs will be defanged and extranous symbols will be removed. The resulting text will be "
+                                      "automatically copied to your clipboard.", font=('Montserrat', 10,),
+                      wraplength=515,
+                      justify="center", style="Label")
+    label.pack(padx=10, pady=10)
+
+    # Function to enable button upon text entered
+    def on_text_change(event):
+        placeholdertext = label.cget("text")
+        current_text = inputbox.get("1.0", "end-1c").strip()
+        if current_text != placeholdertext:
+            button.config(state=tk.NORMAL)
+        else:
+            button.config(state=tk.DISABLED)
+
+    # Text box for MalOp comment.
+    inputbox = tk.Text(secondaryframe, font=('Courier New', 10,))
+    inputbox.pack(side="top", padx=15, pady=15)
+    # Lambda to delete text upon left click.
+    inputbox.bind("<Button-1>", lambda e: inputbox.delete(0.0, tk.END))
+    inputbox.bind("<Key>", on_text_change)
+    # Default text
+    inputbox.insert(0.0, 'Paste your MalOp Comment Here')
+
+    def validate_input(input_string):
+        url_pattern = r'h?ttps?:\/\/(?:www\.)?\w+(?:\.\w+)*(?:\/[^\s]*)?'
+        ip_pattern = r'\b(?:\d{1,3}\.){3}\d{1,3}\b'
+        port_pattern = r'(:)\d+\b'
+
+        rmvsinglequotes = input_string.replace("'", '')
+        rmvquotes = rmvsinglequotes.replace('"', "")
+        suburl = re.sub(url_pattern, lambda match: match.group().replace('.', "[.]"), rmvquotes)
+        subip =  re.sub(ip_pattern, lambda match: match.group().replace('.', "[.]").replace(':', '[:]'), suburl)
+        validated_string = re.sub(port_pattern, '', subip)
+        return validated_string
+
+    def on_click():
+        # take in user text from text box
+        userinput = inputbox.get(0.0, tk.END)
+        # Run user text through beautifying function
+        root.clipboard_clear()
+        root.clipboard_append(validate_input(userinput))
+        inputbox.delete(0.0, tk.END)
+        inputbox.insert(0.0, "Your MalOp comment has been defanged for SOAR and copied to your "
+                             "clipboard. Soldier on, Cyber Warrior!")
+
+    # Button, as part of the main frame, executes on_click function.
+    button = tk.Button(mainframe, text="Defang MalOp Comment", command=on_click, state=tk.DISABLED)
+    button.pack(side="bottom", pady=25)
+
+    # end root
+    root.mainloop()
+
+
+if __name__ == '__main__':
+    main()
